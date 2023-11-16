@@ -6,6 +6,7 @@
 import requests
 import base64
 import sys
+import glob
 
 def encode_file_to_base64(filepath):
     with open(filepath, "rb") as file:
@@ -25,22 +26,24 @@ def update_sipgate_voicemail(token, base64_content, filename):
     response = requests.post(url, headers=headers, json=data)
     return response
 
+def process_files(file_pattern, sipgate_token):
+    for filepath in glob.glob(file_pattern):
+        try:
+            base64_content = encode_file_to_base64(filepath)
+            response = update_sipgate_voicemail(sipgate_token, base64_content, filepath.split("/")[-1])
+            print(f"Processed {filepath} - Response Status Code: {response.status_code}")
+        except Exception as e:
+            print(f"Error processing {filepath}: {e}")
+
 def main():
     if len(sys.argv) != 3:
-        print("Usage: sipgate-upload-greeting.py <audio_file_path> <sipgate_token>")
+        print("Usage: sipgate-upload-greeting.py '<audio_file_pattern>' <sipgate_token>")
         sys.exit(1)
 
-    audio_file_path = sys.argv[1]
+    file_pattern = sys.argv[1]
     sipgate_token = sys.argv[2]
 
-    try:
-        base64_content = encode_file_to_base64(audio_file_path)
-        response = update_sipgate_voicemail(sipgate_token, base64_content, audio_file_path.split("/")[-1])
-        print(f"Response Status Code: {response.status_code}")
-        print(f"Response Text: {response.text}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    process_files(file_pattern, sipgate_token)
 
 if __name__ == "__main__":
     main()
-
