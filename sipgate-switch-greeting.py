@@ -8,11 +8,12 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import sys
+import os
 
-# Constants
-BEARER_TOKEN = "Your_Bearer_Token_Here"
-EVENT_URL = "https://rcab.de"
-SIPGATE_VOICEMAIL_API = "https://api.sipgate.com/v2/w0/phonelines/p0/voicemails/v0/greetings"
+
+SIPGATE_VOICEMAIL_API = os.environ.get("SIPGATE_VOICEMAIL_API","https://api.sipgate.com/v2/w0/phonelines/p0/voicemails/v0/greetings")
+SIPGATE_BEARER_TOKEN = os.environ.get("SIPGATE_BEARER_TOKEN")
+EVENT_URL = os.environ.get("EVENT_URL")
 
 def fetch_and_parse_table(url):
     response = requests.get(url)
@@ -56,6 +57,14 @@ def set_active_greeting(token, greeting_id):
     return response.status_code == 204
 
 def main():
+    if not EVENT_URL:
+        print("No Event URL specified, please define EVENT_URL environmental variable!")
+        sys.exit(1)
+
+    if not SIPGATE_BEARER_TOKEN:
+        print("No Sipgate Bearer Token specified, please define SIPGATE_BEARER_TOKEN environmental variable!")
+        sys.exit(1)
+
     table = fetch_and_parse_table(EVENT_URL)
     next_event_date = find_next_event_date(table)
 
@@ -63,7 +72,7 @@ def main():
         print("No upcoming events found.")
         sys.exit(1)
 
-    greetings = get_voicemail_greetings(BEARER_TOKEN)
+    greetings = get_voicemail_greetings(SIPGATE_BEARER_TOKEN)
     if greetings:
         for item in greetings.get('items', []):
             if item.get('alias') == f"AB {next_event_date}":
@@ -71,7 +80,7 @@ def main():
                     print(f"Greeting for {next_event_date} is already active.")
                     sys.exit(0)
                 else:
-                    if set_active_greeting(BEARER_TOKEN, item['id']):
+                    if set_active_greeting(SIPGATE_BEARER_TOKEN, item['id']):
                         print(f"Successfully activated greeting for {next_event_date}.")
                         sys.exit(0)
                     else:
