@@ -3,8 +3,10 @@
 # This script can run daily and activate the next date's voicemail greeting
 # The greetings need to already be uploaded to the sipgate account using
 # sipgate-upload-greeting.py with fileformat AB_YYYY-MM-DD.mp3
+# For Authentication, create a https://app.sipgate.com/personal-access-token
 
 import requests
+from requests.auth import HTTPBasicAuth
 from bs4 import BeautifulSoup
 from datetime import datetime
 import sys
@@ -12,7 +14,8 @@ import os
 
 
 SIPGATE_VOICEMAIL_API = os.environ.get("SIPGATE_VOICEMAIL_API","https://api.sipgate.com/v2/w0/phonelines/p0/voicemails/v0/greetings")
-SIPGATE_BEARER_TOKEN = os.environ.get("SIPGATE_BEARER_TOKEN")
+SIPGATE_USERNAME = os.environ.get("SIPGATE_TOKEN_ID")
+SIPGATE_PASSWORD = os.environ.get("SIPGATE_TOKEN")
 EVENT_URL = os.environ.get("EVENT_URL")
 
 def fetch_and_parse_table(url):
@@ -32,10 +35,12 @@ def find_next_event_date(table):
             return date_str
     return None
 
-def get_voicemail_greetings(token):
-    headers = {"Authorization": f"Bearer {token}"}
+def get_voicemail_greetings():
     try:
-        response = requests.get(SIPGATE_VOICEMAIL_API, headers=headers)
+        response = requests.get(
+            SIPGATE_VOICEMAIL_API,
+            auth=HTTPBasicAuth(SIPGATE_USERNAME, SIPGATE_PASSWORD)
+        )
         response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
         return response.json()
     except requests.exceptions.HTTPError as http_err:
@@ -46,23 +51,30 @@ def get_voicemail_greetings(token):
         print(f"JSON decoding error: {json_err}")
     return None
 
-def set_active_greeting(token, greeting_id):
+def set_active_greeting(greeting_id):
     url = f"{SIPGATE_VOICEMAIL_API}/{greeting_id}"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
-    data = {"active": True}
-    response = requests.put(url, headers=headers, json=data)
-    return response.status_code == 204
+    try:
+        response = requests.put(
+            url,
+            headers={"Content-Type": "application/json"},
+            auth=HTTPBasicAuth(SIPGATE_USERNAME, SIPGATE_PASSWORD),
+            json={"active": True}
+        )
+        response.raise_for_status()
+        return True
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err}")
+    except requests.exceptions.RequestException as req_err:
+        print(f"Error occurred: {req_err}")
+    return False
 
 def main():
     if not EVENT_URL:
         print("No Event URL specified, please define EVENT_URL environmental variable!")
         sys.exit(1)
 
-    if not SIPGATE_BEARER_TOKEN:
-        print("No Sipgate Bearer Token specified, please define SIPGATE_BEARER_TOKEN environmental variable!")
+    if not SIPGATE_USERNAME or not SIPGATE_PASSWORD:
+        print("No Sipgate Authentication specified, please define SIPGATE_TOKEN_ID and SIPGATE_TOKEN.\nPersonal Access Token can be created on https://app.sipgate.com/personal-access-token")
         sys.exit(1)
 
     table = fetch_and_parse_table(EVENT_URL)
@@ -72,7 +84,7 @@ def main():
         print("No upcoming events found.")
         sys.exit(1)
 
-    greetings = get_voicemail_greetings(SIPGATE_BEARER_TOKEN)
+    greetings = get_voicemail_greetings()
     if greetings:
         for item in greetings.get('items', []):
             if item.get('alias') == f"AB {next_event_date}":
