@@ -31,10 +31,14 @@
 ### Usage
 `sipgate-switch-greeting.py`
 * There are no command line arguments
-* the sipgate bearer token and source of event's date table url are defined as constants in the top of the script
+* The script requires the following environmental variables to be set: `SIPGATE_TOKEN_ID`, `SIPGATE_TOKEN` and `EVENT_URL`
+* A Personal Access Token can be obtained from https://app.sipgate.com/personal-access-token
+* It needs to have permission to the voicemail and greetings scopes
+* the event dates are expected on the website given by EVENT_URL in an HTML `<table id="termine-tabelle">` inside a `<td class="termin-date">` in the format YYYY-MM-DD
 * corresponding dates' clips are expected to already be uploaded as voicemail greetings on the sipgate account using `sipgate-upload-greeting.py`
-* you might have to edit the REST API path if your account uses multiple phonelines
+* you can override the `SIPGATE_VOICEMAIL_API` environmental variable if your account uses multiple phonelines
 * this script should be called daily as cronjob
+* for example: `SIPGATE_TOKEN_ID=token-ABC123 SIPGATE_TOKEN=123e4567-e89b-12d3-a456-426614174000 EVENT_URL="https://rcab.de" ./sipgate-switch-greeting.py`
 
 ## Requirements
 * `sox`
