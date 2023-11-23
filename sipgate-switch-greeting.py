@@ -92,7 +92,7 @@ def main():
                     print(f"Greeting for {next_event_date} is already active.")
                     sys.exit(0)
                 else:
-                    if set_active_greeting(SIPGATE_BEARER_TOKEN, item['id']):
+                    if set_active_greeting(item['id']):
                         print(f"Successfully activated greeting for {next_event_date}.")
                         sys.exit(0)
                     else:
