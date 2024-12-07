@@ -18,9 +18,9 @@
 `sipgate-upload-greeting.py` is used to upload the batch of greetings to the sipgate server
 
 ### Usage
-`./sipgate-upload-greeting.py '<audio_file_pattern>' <sipgate_token>`
+`./sipgate-upload-greeting.py '<audio_file_pattern>' <sipgate_token_id> <sipgate_token>`
 * the `audio_file_pattern` argument uses internal globbing, so it needs to be quoted to prevent command line expansion, e.g.
-* `./sipgate-upload-greeting.py 'AB_2023*.wav' <sipgate_token>`
+* `./sipgate-upload-greeting.py 'AB_2023*.wav' <sipgate_token_id> <sipgate_token>`
 * sipgate supports wav or mp3 format
 * the sipgate token can be obtained through https://app.sipgate.com/personal-access-token
 * you might have to edit the REST API path if your account uses multiple phonelines
